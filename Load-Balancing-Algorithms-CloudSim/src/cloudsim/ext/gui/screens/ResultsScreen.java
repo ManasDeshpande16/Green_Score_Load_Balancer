@@ -1,6 +1,7 @@
 package cloudsim.ext.gui.screens;
 
 import java.awt.BorderLayout;
+import java.awt.Color;
 import java.awt.Dimension;
 import java.awt.GridLayout;
 import java.awt.event.ActionEvent;
@@ -27,7 +28,9 @@ import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 import javax.swing.JTable;
+import javax.swing.border.CompoundBorder;
 import javax.swing.border.EmptyBorder;
+import javax.swing.border.LineBorder;
 import javax.swing.filechooser.FileFilter;
 
 import cloudsim.ext.Constants;
@@ -67,6 +70,10 @@ public class ResultsScreen extends JPanel implements ActionListener {
 	private double totalCost;
 	private double vmCost;
 	private double dataCost;
+	private double totalEnergy;
+	private double totalCarbon;
+	private double greenScore;
+	private SimpleTableModel energyTableModel;
 	
 	/** Constructor */
 	public ResultsScreen(Simulation simulation){
@@ -103,7 +110,12 @@ public class ResultsScreen extends JPanel implements ActionListener {
 		
 		Map<String, Map<String, Double>> costs = (Map<String, Map<String, Double>>) results.get(Constants.COSTS);
 		mainContentPanel.add(createCostsPanel(costs));
-		
+
+		Map<String, Map<String, Double>> energyStats = (Map<String, Map<String, Double>>) results.get(Constants.ENERGY_STATS);
+		if (energyStats != null) {
+			mainContentPanel.add(createEnergyPanel(energyStats));
+		}
+
 		resultsPanel.add(mainContentPanel, BorderLayout.CENTER);
 		
 		resultsPanel.add(createSummaryPanel(), BorderLayout.NORTH);
@@ -155,15 +167,19 @@ public class ResultsScreen extends JPanel implements ActionListener {
 		JPanel summaryPanel = new JPanel();
 		summaryPanel.setLayout(new BorderLayout());
 		
-		JLabel summaryHeading = new JLabel("<html><h2>Overall Response Time Summary</h2></html>");
+		JLabel summaryHeading = new JLabel("<html><h2>Simulation Results Summary</h2></html>");
 		summaryPanel.add(summaryHeading, BorderLayout.NORTH);
-		
+
+		String scoreColor = getScoreColorHex(greenScore);
 		String detailsText = "<html><table>"
 							+ "<tr><th></th><th>Average (ms)</th><th>Minimum (ms)</th><th>Maximum (ms)</th></tr>"
 							+ "<tr><td>Overall Response Time:</td><td>" + df.format(avgResponseTime) + "</td><td>"
 							+ df.format(minResponseTime) + "</td><td>" + df.format(maxResponseTime) + "</td><td></tr>"
-							+ "<tr><td>Data Center Processing Time:</td><td>" + df.format(avgProcessingTime) + "</td><td>" 
+							+ "<tr><td>Data Center Processing Time:</td><td>" + df.format(avgProcessingTime) + "</td><td>"
 							+ df.format(minProcessingTime) + "</td><td>" + df.format(maxProcessingTime) + "</td><td></tr>"
+							+ "<tr><td colspan='4'><br/></td></tr>"
+							+ "<tr><td><b>Green Score:</b></td><td colspan='3'><span style='color:" + scoreColor
+							+ ";font-size:14pt;font-weight:bold'>" + df.format(greenScore) + "</span></td></tr>"
 							+ "</table></html>";							
 		JLabel details = new JLabel(detailsText);
 					
@@ -179,7 +195,81 @@ public class ResultsScreen extends JPanel implements ActionListener {
 		
 		return summaryPanel;
 	}
-	
+
+	private String getScoreColorHex(double score) {
+		if (score >= 5.0) return "#228B22";      // green
+		else if (score >= 2.0) return "#DAA520";  // goldenrod
+		else return "#CC0000";                     // red
+	}
+
+	private Color getScoreColor(double score) {
+		if (score >= 5.0) return new Color(34, 139, 34);
+		else if (score >= 2.0) return new Color(218, 165, 32);
+		else return new Color(204, 0, 0);
+	}
+
+	@SuppressWarnings("unchecked")
+	private JPanel createEnergyPanel(Map<String, Map<String, Double>> energyStats) {
+		JPanel energyPanel = new JPanel();
+		energyPanel.setLayout(new BorderLayout());
+		energyPanel.setBorder(new EmptyBorder(20, 5, 5, 5));
+
+		energyTableModel = new SimpleTableModel(
+			new String[]{"Data Center", "Energy (kWh)", "Carbon (kgCO2)"});
+
+		Map<String, Double> totals = energyStats.remove("__totals__");
+		if (totals != null) {
+			totalEnergy = totals.get(Constants.TOTAL_ENERGY);
+			totalCarbon = totals.get(Constants.TOTAL_CARBON);
+			greenScore = totals.get(Constants.GREEN_SCORE);
+		}
+
+		for (String dcName : energyStats.keySet()) {
+			Map<String, Double> dcEnergy = energyStats.get(dcName);
+			energyTableModel.addRow(new Object[]{
+				dcName,
+				df.format(dcEnergy.get(Constants.ENERGY_PER_DC)),
+				df.format(dcEnergy.get(Constants.CARBON_PER_DC))
+			});
+		}
+
+		// Green Score display with color-coded background
+		Color scoreColor = getScoreColor(greenScore);
+		JPanel scoreCard = new JPanel();
+		scoreCard.setLayout(new BorderLayout());
+		scoreCard.setBackground(scoreColor);
+		scoreCard.setBorder(new CompoundBorder(
+			new LineBorder(scoreColor.darker(), 2),
+			new EmptyBorder(10, 20, 10, 20)));
+		JLabel scoreLabel = new JLabel("<html><div style='text-align:center'>"
+			+ "<span style='font-size:24pt;color:white;font-weight:bold'>"
+			+ df.format(greenScore) + "</span><br/>"
+			+ "<span style='font-size:10pt;color:white'>GREEN SCORE</span>"
+			+ "</div></html>");
+		scoreLabel.setHorizontalAlignment(JLabel.CENTER);
+		scoreCard.add(scoreLabel, BorderLayout.CENTER);
+
+		JPanel headerPanel = new JPanel();
+		headerPanel.setLayout(new BorderLayout());
+		String resText = "<html><h2>Green Energy Metrics</h2>"
+			+ "<table>"
+			+ "<tr><td>Total Energy Consumption:</td><td><b>" + df.format(totalEnergy) + " kWh</b></td></tr>"
+			+ "<tr><td>Total Carbon Footprint:</td><td><b>" + df.format(totalCarbon) + " kgCO2</b></td></tr>"
+			+ "</table></html>";
+		headerPanel.add(new JLabel(resText), BorderLayout.CENTER);
+		headerPanel.add(scoreCard, BorderLayout.EAST);
+		energyPanel.add(headerPanel, BorderLayout.NORTH);
+
+		JTable energyTable = new JTable(energyTableModel);
+		energyTable.setPreferredScrollableViewportSize(
+			new Dimension(400, 20 * Math.max(1, energyStats.size())));
+		JScrollPane scrollPane = new JScrollPane(energyTable);
+		scrollPane.setBorder(new EmptyBorder(20, 0, 0, 0));
+		energyPanel.add(scrollPane, BorderLayout.CENTER);
+
+		return energyPanel;
+	}
+
 	private JPanel createResponseTimeStatsPanel(Map<String, SimMeasure> ubStats) {
 		int count = 0;
 		int rowCount = 0;
@@ -547,10 +637,16 @@ public class ResultsScreen extends JPanel implements ActionListener {
 		costSummary.add(new Object[]{"Grand Total: ($)", totalCost});
 		
 		List<Object[]> costDetails = costTableModel.getData();
-		
-		PdfExporter.saveToPdf(file, header, summary, ubStats, ubResponseGraphs, 
-							  dcStats, dcProcTimeGraphs, dcLoadingGraphs, costSummary, costDetails);
-		
-		//TODO - Add simulation configuration to the pdf
+
+		List<Object[]> energySummary = new ArrayList<Object[]>();
+		energySummary.add(new Object[]{"Total Energy Consumption (kWh):", totalEnergy});
+		energySummary.add(new Object[]{"Total Carbon Footprint (kgCO2):", totalCarbon});
+		energySummary.add(new Object[]{"Green Score:", greenScore});
+
+		List<Object[]> energyDetails = (energyTableModel != null) ? energyTableModel.getData() : new ArrayList<Object[]>();
+
+		PdfExporter.saveToPdf(file, header, summary, ubStats, ubResponseGraphs,
+							  dcStats, dcProcTimeGraphs, dcLoadingGraphs, costSummary, costDetails,
+							  energySummary, energyDetails);
 	}
 }

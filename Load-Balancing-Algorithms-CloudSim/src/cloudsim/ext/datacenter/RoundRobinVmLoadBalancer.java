@@ -21,7 +21,6 @@ public class RoundRobinVmLoadBalancer extends VmLoadBalancer {
 		}
 		
 		allocatedVm(currVm);
-		System.out.println("allocated "+currVm);
 		return currVm;
 		
 	}

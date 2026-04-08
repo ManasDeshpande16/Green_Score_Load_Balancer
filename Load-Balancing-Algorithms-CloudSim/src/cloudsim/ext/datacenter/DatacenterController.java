@@ -53,6 +53,8 @@ public class DatacenterController extends DatacenterBroker implements GeoLocatab
 	private double costPerVmHour;
 	private double costPerDataGB;
 	private double totalData;
+	private EnergyModel energyModel;
+	private int numHosts = 1;
 	private HourlyEventCounter hourlyArrival;
 	private HourlyStat hourlyProcessingTimes;
 	private Map<Integer, Double[]> vmUsage;
@@ -98,7 +100,11 @@ public class DatacenterController extends DatacenterBroker implements GeoLocatab
 		vmStatesList = Collections.synchronizedMap(new HashMap<Integer, VirtualMachineState>());
 		waitingQueue = Collections.synchronizedList(new LinkedList<InternetCloudlet>());
 		processingCloudletStatuses = new HashMap<Integer, Long[]>();
-		
+
+		this.energyModel = new EnergyModel(Constants.DEFAULT_HOST_IDLE_POWER_W,
+											Constants.DEFAULT_HOST_MAX_POWER_W,
+											Constants.DEFAULT_PUE);
+
 		if (loadBalancePolicy.equals(Constants.LOAD_BALANCE_ACTIVE)){
 			this.loadBalancer = new ActiveVmLoadBalancer(this);
 		} else if (loadBalancePolicy.equals(Constants.LOAD_BALANCE_POLICY_RR)){
@@ -119,6 +125,9 @@ public class DatacenterController extends DatacenterBroker implements GeoLocatab
 		}
 		else if (loadBalancePolicy.equals(Constants.LOAD_BALANCE_WRR)) {
 			this.loadBalancer = new WeightedRoundRobinVmLoadBalancer(vmStatesList, this);
+		}
+		else if (loadBalancePolicy.equals(Constants.LOAD_BALANCE_GREEN)) {
+			this.loadBalancer = new GreenVmLoadBalancer(this);
 		}
 	}
 	
@@ -462,6 +471,35 @@ public class DatacenterController extends DatacenterBroker implements GeoLocatab
 		return ((totalTime / Constants.MILLI_SECONDS_TO_HOURS) * costPerVmHour);
 	}
 
+
+	public void setNumHosts(int numHosts) {
+		this.numHosts = numHosts;
+	}
+
+	/** Total energy consumed by this DC in kWh. */
+	public double getEnergyKWh() {
+		double totalVmTimeMs = 0.0;
+		double now = GridSim.clock();
+		for (Double[] vmAllocationTime : vmUsage.values()) {
+			double start = vmAllocationTime[0];
+			double end = (vmAllocationTime[1] == -1) ? now : vmAllocationTime[1];
+			totalVmTimeMs += (end - start);
+		}
+		double simDurationMs = now;
+		double avgUtilization = (numHosts > 0 && simDurationMs > 0)
+			? Math.min(1.0, totalVmTimeMs / (numHosts * simDurationMs))
+			: 0.0;
+		double totalEnergy = 0.0;
+		for (int h = 0; h < numHosts; h++) {
+			totalEnergy += energyModel.getEnergyKWh(avgUtilization, simDurationMs);
+		}
+		return totalEnergy;
+	}
+
+	/** Carbon footprint of this DC in kgCO2. */
+	public double getCarbonKg() {
+		return energyModel.getCarbonKg(getEnergyKWh(), region);
+	}
 
 	/**
 	 * @return the hourlyArrival

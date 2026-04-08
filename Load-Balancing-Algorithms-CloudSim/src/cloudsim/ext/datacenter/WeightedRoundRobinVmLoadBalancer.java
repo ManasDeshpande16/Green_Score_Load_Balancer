@@ -11,16 +11,21 @@ import cloudsim.ext.event.CloudSimEvents;
 
 
 public class WeightedRoundRobinVmLoadBalancer extends VmLoadBalancer implements CloudSimEventListener  {
-	
-	private Map<Integer, VirtualMachineState> vmStatesList;
-	private Map<Integer, Integer> currentAllocationCounts;
 
-	private int[] vmWeights = {21, 20, 21, 22, 21, 20, 22, 22, 22, 20, 21, 21, 20, 21, 22, 21, 20, 21, 22, 22, 21, 21, 21, 20, 22, 20, 20, 22, 21, 20, 22, 20, 21, 20, 21, 22, 22, 21, 22, 20, 21, 20, 21, 21, 20, 22, 21, 20, 21, 20}; 
+	private Map<Integer, VirtualMachineState> vmStatesList;
+	private int[] vmWeights;
+	private static final int DEFAULT_WEIGHT = 20;
 
 	public WeightedRoundRobinVmLoadBalancer(Map<Integer, VirtualMachineState> vmStatesList, DatacenterController dcb){
 		super();
 		dcb.addCloudSimEventListener(this);
 		this.vmStatesList = vmStatesList;
+
+		int vmCount = Math.max(1, vmStatesList.size());
+		vmWeights = new int[vmCount];
+		for (int i = 0; i < vmCount; i++) {
+			vmWeights[i] = DEFAULT_WEIGHT;
+		}
 	}
 
 	public int getNextAvailableVm(){
@@ -28,32 +33,33 @@ public class WeightedRoundRobinVmLoadBalancer extends VmLoadBalancer implements 
 		allocatedVm(vm);
 		return vm;
 	}
-	
+
 	public int weightedRoundRobin() {
 		int i = -1;
 		int cw = 0;
-		
-		while (true) { 
-			i = (i + 1) % 50; 
-			if (i == 0) { 
-				cw = cw - vmGCD(vmWeights); 
-				if (cw <= 0) { 
-					cw = vmMax(vmWeights); 
-//					if (cw == 0)  return 0; 
-				} 
-			} 
-			if (vmWeights[i] >= cw)  return i; 
+		int len = vmWeights.length;
+
+		while (true) {
+			i = (i + 1) % len;
+			if (i == 0) {
+				cw = cw - vmGCD(vmWeights);
+				if (cw <= 0) {
+					cw = vmMax(vmWeights);
+					if (cw == 0) return 0;
+				}
+			}
+			if (vmWeights[i] >= cw) return i;
 		}
 	}
-	
+
 	public int vmGCD(int[] vmWeights) {
-		int currGcd = gcd(vmWeights[0], vmWeights[1]);
-		for (int i = 2; i < 50; i++) {
+		int currGcd = gcd(vmWeights[0], vmWeights.length > 1 ? vmWeights[1] : vmWeights[0]);
+		for (int i = 2; i < vmWeights.length; i++) {
 			currGcd = gcd(currGcd, vmWeights[i]);
 		}
 		return currGcd;
 	}
-	
+
 	public int vmMax(int[] vmWeights) {
 		int max = -1;
 		for(int wt : vmWeights) {
@@ -61,37 +67,27 @@ public class WeightedRoundRobinVmLoadBalancer extends VmLoadBalancer implements 
 		}
 		return max;
 	}
-	
-	static int gcd(int a, int b) 
-    { 
-        // Everything divides 0  
-        if (a == 0) 
-          return b; 
-        if (b == 0) 
-          return a; 
-       
-        // base case 
-        if (a == b) 
-            return a; 
-       
-        // a is greater 
-        if (a > b) 
-            return gcd(a-b, b); 
-        return gcd(a, b-a); 
+
+	static int gcd(int a, int b)
+    {
+        if (a == 0) return b;
+        if (b == 0) return a;
+        if (a == b) return a;
+        if (a > b) return gcd(a-b, b);
+        return gcd(a, b-a);
     }
-	
+
 	public void cloudSimEventFired(CloudSimEvent e) {
 		if (e.getId() == CloudSimEvents.EVENT_CLOUDLET_ALLOCATED_TO_VM){
 			int vmId = (Integer) e.getParameter(Constants.PARAM_VM_ID);
-			vmWeights[vmId]--;
-			System.out.println(vmId+" allocated");
-		} else if (e.getId() == CloudSimEvents.EVENT_VM_FINISHED_CLOUDLET){
-
-			int vmId = (Integer) e.getParameter(Constants.PARAM_VM_ID);
-			vmWeights[vmId]++;
-			System.out.println(vmId+" deallocated");
-				
+			if (vmId >= 0 && vmId < vmWeights.length) {
+				vmWeights[vmId]--;
 			}
-			
+		} else if (e.getId() == CloudSimEvents.EVENT_VM_FINISHED_CLOUDLET){
+			int vmId = (Integer) e.getParameter(Constants.PARAM_VM_ID);
+			if (vmId >= 0 && vmId < vmWeights.length) {
+				vmWeights[vmId]++;
+			}
 		}
 	}
+}

@@ -37,6 +37,7 @@ import cloudsim.VMMAllocationPolicy;
 import cloudsim.VirtualMachine;
 import cloudsim.VirtualMachineList;
 import cloudsim.ext.datacenter.DatacenterController;
+import cloudsim.ext.datacenter.EnergyModel;
 import cloudsim.ext.event.BaseCloudSimObservable;
 import cloudsim.ext.event.CloudSimEvent;
 import cloudsim.ext.event.CloudSimEventListener;
@@ -176,6 +177,7 @@ public class Simulation extends BaseCloudSimObservable implements Constants {
 				int brokerId = controller.get_id();
 				vmlist = createVM(brokerId, d.getVmAllocation().getVmCount());
 				controller.submitVMList(vmlist);
+				controller.setNumHosts(d.getMachineList().size());
 			}
 		}
 		
@@ -266,9 +268,25 @@ public class Simulation extends BaseCloudSimObservable implements Constants {
 		results.put(Constants.DC_ARRIVAL_STATS, dcArrivalStats);
 		results.put(Constants.DC_OVER_LOADING_STATS, dcLoadingStats);
 		results.put(Constants.COSTS, costs);
-		
+
 		for (DataCenter dc : dcs){
 			dc.printDebts();
+		}
+
+		// Gather energy and carbon results
+		Map<String, Map<String, Double>> energyStats = new HashMap<String, Map<String, Double>>();
+		double totalEnergy = 0.0;
+		double totalCarbon = 0.0;
+		for (DatacenterController dcb : dcbs) {
+			String dcNameE = dcb.get_name().substring(0, dcb.get_name().indexOf("-Broker"));
+			Map<String, Double> dcEnergy = new HashMap<String, Double>();
+			double energy = dcb.getEnergyKWh();
+			double carbon = dcb.getCarbonKg();
+			dcEnergy.put(Constants.ENERGY_PER_DC, energy);
+			dcEnergy.put(Constants.CARBON_PER_DC, carbon);
+			energyStats.put(dcNameE, dcEnergy);
+			totalEnergy += energy;
+			totalCarbon += carbon;
 		}
 
 		Map<String, SimMeasure> ubResults = new TreeMap<String, SimMeasure>();
@@ -294,7 +312,26 @@ public class Simulation extends BaseCloudSimObservable implements Constants {
 			}
 		}
 		results.put(Constants.UB_STATS, ubResults);
-		
+
+		// Compute average response time for Green Score
+		double totalAvgResp = 0.0;
+		int ubCount = 0;
+		for (SimMeasure m : ubResults.values()) {
+			if (m.getName().equals(Constants.UB_RESPONSE_TIME)) {
+				totalAvgResp += m.getAvg();
+				ubCount++;
+			}
+		}
+		double avgRespTime = (ubCount > 0) ? totalAvgResp / ubCount : 0.0;
+		double greenScore = EnergyModel.computeGreenScore(totalEnergy, totalCarbon, avgRespTime);
+
+		Map<String, Double> energyTotals = new HashMap<String, Double>();
+		energyTotals.put(Constants.TOTAL_ENERGY, totalEnergy);
+		energyTotals.put(Constants.TOTAL_CARBON, totalCarbon);
+		energyTotals.put(Constants.GREEN_SCORE, greenScore);
+		energyStats.put("__totals__", energyTotals);
+		results.put(Constants.ENERGY_STATS, energyStats);
+
 		//Finish off simulation
 		System.out.println("Simulation finished at " + GridSim.clock());
 		CloudSimEvent cloudSimEvent = new CloudSimEvent(CloudSimEvents.EVENT_SIMULATION_ENDED);

@@ -91,5 +91,24 @@ public interface Constants {
 	final String LOAD_BALANCE_HONEY_COLONY = "Honey Bee Foraging loadbalancer";
 	final String LOAD_BALANCE_PSO = "PSO LoadBalancer";
 	final String LOAD_BALANCE_THRESHOLD = "Threshold based LB";
-	
+	final String LOAD_BALANCE_GREEN = "Green Energy-Aware LB";
+
+	// Energy model constants
+	final String ENERGY_STATS = "Energy stats";
+	final String ENERGY_PER_DC = "Energy Per DC (kWh)";
+	final String CARBON_PER_DC = "Carbon Per DC (kgCO2)";
+	final String GREEN_SCORE = "Green Score";
+	final String TOTAL_ENERGY = "Total Energy (kWh)";
+	final String TOTAL_CARBON = "Total Carbon (kgCO2)";
+
+	// Power model defaults (SPECpower benchmark values)
+	final double DEFAULT_HOST_IDLE_POWER_W = 162.0;
+	final double DEFAULT_HOST_MAX_POWER_W = 215.0;
+	final double DEFAULT_PUE = 1.3;
+
+	// Carbon intensity by region (gCO2/kWh) — real-world grid mix approximations
+	// Region 0: N.America(400), 1: S.America(80), 2: Europe(300),
+	// 3: Asia(600), 4: Africa/MiddleEast(500), 5: Oceania(700)
+	final double[] CARBON_INTENSITY_BY_REGION = {400.0, 80.0, 300.0, 600.0, 500.0, 700.0};
+
 }

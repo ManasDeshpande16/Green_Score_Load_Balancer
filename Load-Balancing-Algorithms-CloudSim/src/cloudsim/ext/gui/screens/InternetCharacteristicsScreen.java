@@ -261,6 +261,21 @@ public class InternetCharacteristicsScreen extends JPanel implements ActionListe
 		return delayMatrix;
 	}
 
+	private File resolveConfigFile(String resourcePath) {
+		// Try classpath resource first
+		try {
+			java.net.URL url = getClass().getClassLoader().getResource(resourcePath);
+			if (url != null) {
+				File f = new File(url.getFile());
+				if (f.exists() && f.canWrite()) return f;
+			}
+		} catch (Exception ignored) {}
+		// Fallback: save relative to working directory
+		File f = new File(resourcePath);
+		f.getParentFile().mkdirs();
+		return f;
+	}
+
 	public void actionPerformed(ActionEvent e) {
 		if (e.getActionCommand().equals(CMD_DONE_INTERNET_CONFIG)){
 
@@ -269,9 +284,10 @@ public class InternetCharacteristicsScreen extends JPanel implements ActionListe
 			InternetCharacteristics.getInstance().setLatencyMatrix(delayMatrix);
 
 			try {
-				IOUtil.saveAsXML(delayMatrix, new File(getClass().getClassLoader().getResource(DELAYMATRIX_FILE).getFile()));
+				IOUtil.saveAsXML(delayMatrix, resolveConfigFile(DELAYMATRIX_FILE));
 			} catch (IOException e1) {
-				JOptionPane.showMessageDialog(this, "Failed to save delay matrix file!", "I/O Error", JOptionPane.WARNING_MESSAGE);
+				JOptionPane.showMessageDialog(this, "Failed to save delay matrix file: " + e1.getMessage(),
+					"I/O Error", JOptionPane.WARNING_MESSAGE);
 			}
 
 			data = bwMatrixModel.getData();
@@ -279,10 +295,14 @@ public class InternetCharacteristicsScreen extends JPanel implements ActionListe
 			InternetCharacteristics.getInstance().setBwMatrix(bwMatrix);
 
 			try {
-				IOUtil.saveAsXML(bwMatrix, new File(getClass().getClassLoader().getResource(BWMATRIX_FILE).getFile()));
+				IOUtil.saveAsXML(bwMatrix, resolveConfigFile(BWMATRIX_FILE));
 			} catch (IOException e1) {
-				JOptionPane.showMessageDialog(this, "Failed to save bandwidth matrix file!", "I/O Error", JOptionPane.WARNING_MESSAGE);
+				JOptionPane.showMessageDialog(this, "Failed to save bandwidth matrix file: " + e1.getMessage(),
+					"I/O Error", JOptionPane.WARNING_MESSAGE);
 			}
+
+			JOptionPane.showMessageDialog(this, "Internet characteristics saved successfully.",
+				"Saved", JOptionPane.INFORMATION_MESSAGE);
 		}
 	}
 

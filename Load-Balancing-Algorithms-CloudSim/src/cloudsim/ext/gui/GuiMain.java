@@ -2,7 +2,9 @@ package cloudsim.ext.gui;
 
 import java.awt.BorderLayout;
 import java.awt.CardLayout;
+import java.awt.Color;
 import java.awt.Dimension;
+import java.awt.Font;
 import java.awt.Toolkit;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
@@ -23,8 +25,6 @@ import javax.swing.JPanel;
 import javax.swing.JProgressBar;
 import javax.swing.JScrollPane;
 import javax.swing.JToggleButton;
-import javax.swing.border.BevelBorder;
-import javax.swing.border.Border;
 import javax.swing.border.CompoundBorder;
 import javax.swing.border.EmptyBorder;
 
@@ -92,7 +92,7 @@ private static final String CMD_ABOUT = "About";
 	}
 	
 	private void initUI(){		
-		this.setTitle("Cloud Analyst");
+		this.setTitle("Green Score Load Balancer");
 		this.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 		this.setSize(FRAME_SIZE);
 		this.setExtendedState(JFrame.MAXIMIZED_BOTH);
@@ -199,7 +199,7 @@ private static final String CMD_ABOUT = "About";
 		if (resultsDlg == null){
 			resultsDlg = new JDialog(this);
 			resultsDlg.setLocationRelativeTo(this);
-			resultsDlg.setTitle("Simulation Results");
+			resultsDlg.setTitle("Green Score - Simulation Results");
 			
 			resultsScreen = new ResultsScreen(simulation);
 			resultsDlg.getContentPane().add(new JScrollPane(resultsScreen));
@@ -215,17 +215,27 @@ private static final String CMD_ABOUT = "About";
 	private JPanel getMenuPanel(){
 		JPanel menuPanel = new JPanel();
 		menuPanel.setLayout(new BoxLayout(menuPanel, BoxLayout.Y_AXIS));
-		Border bevelBorder = new BevelBorder(BevelBorder.RAISED);
-		Border emptyBoarder = new EmptyBorder(20, 12, 12, 12);
-		menuPanel.setBorder(new CompoundBorder(bevelBorder, emptyBoarder));
-		
+		menuPanel.setBackground(new Color(24, 28, 33));
+		menuPanel.setBorder(new CompoundBorder(
+			new EmptyBorder(0, 0, 0, 1),
+			new EmptyBorder(25, 16, 16, 16)));
+		menuPanel.setOpaque(true);
+
+		// App branding at top
+		JLabel brand = new JLabel("<html><div style='text-align:center'><b>GREEN<br/>SCORE</b></div></html>");
+		brand.setForeground(new Color(46, 160, 67));
+		brand.setFont(new Font(brand.getFont().getName(), Font.BOLD, 14));
+		brand.setAlignmentX(JLabel.CENTER_ALIGNMENT);
+		menuPanel.add(brand);
+		menuPanel.add(Box.createVerticalStrut(25));
+
 		addMenuButton(menuPanel, CMD_CONFIGURE_SIMULATION);
 		addMenuButton(menuPanel, CMD_DEFINE_INTERNET_CHARACTERISTICS);
 		menuPanel.add(Box.createVerticalStrut(20));
 		addMenuButton(menuPanel, CMD_RUN_SIMULATION);
 		menuPanel.add(Box.createVerticalStrut(20));
 		addMenuButton(menuPanel, CMD_EXIT);
-		
+
 		return menuPanel;
 	}
 	
@@ -363,14 +373,16 @@ private static final String CMD_ABOUT = "About";
 		} else if (e.getActionCommand().equals(CMD_ABOUT)){
 			if (abtDlg == null){
 				abtDlg = new JDialog();
-				abtDlg.setTitle("About CloudSimulator");
+				abtDlg.setTitle("About Green Score Load Balancer");
 				Dimension screenSize = Toolkit.getDefaultToolkit().getScreenSize();
 				abtDlg.setLocation((int) screenSize.getWidth()/ 2 - 200, (int) screenSize.getHeight() / 2 - 150);
 				abtDlg.setSize(400, 300);
-				
-				JLabel text = new JLabel("<html><div align='center'><h2>CloudSimulator</h2> v1.0 beta<br/>" +
-											"Created by: Bhathiya Wickremasinghe (mkbw@pgrad.unimelb.edu.au)" +
-											"</div></html>");
+
+				JLabel text = new JLabel("<html><div align='center'><h2>Green Score Load Balancer</h2>"
+											+ "Energy-aware cloud load balancing simulation<br/><br/>"
+											+ "Built on CloudAnalyst / CloudSim framework<br/>"
+											+ "Original framework by: Bhathiya Wickremasinghe"
+											+ "</div></html>");
 				abtDlg.getContentPane().add(text);
 			}
 			
@@ -402,6 +414,63 @@ private static final String CMD_ABOUT = "About";
 	 * @param args
 	 */
 	public static void main(String[] args){
+		try {
+			for (javax.swing.UIManager.LookAndFeelInfo info : javax.swing.UIManager.getInstalledLookAndFeels()) {
+				if ("Nimbus".equals(info.getName())) {
+					javax.swing.UIManager.setLookAndFeel(info.getClassName());
+					break;
+				}
+			}
+
+			// Dark green theme overrides
+			Color bgDark = new Color(30, 34, 39);
+			Color bgMid = new Color(40, 44, 52);
+			Color bgLight = new Color(55, 60, 68);
+			Color textColor = new Color(220, 225, 230);
+			Color accent = new Color(46, 160, 67);
+			Color accentDim = new Color(36, 120, 52);
+			Color controlBg = new Color(50, 55, 62);
+
+			javax.swing.UIManager.put("control", bgMid);
+			javax.swing.UIManager.put("nimbusBase", bgDark);
+			javax.swing.UIManager.put("nimbusBlueGrey", bgLight);
+			javax.swing.UIManager.put("nimbusFocus", accent);
+			javax.swing.UIManager.put("nimbusLightBackground", new Color(45, 50, 58));
+			javax.swing.UIManager.put("nimbusSelectionBackground", accentDim);
+			javax.swing.UIManager.put("nimbusSelectedText", Color.WHITE);
+			javax.swing.UIManager.put("text", textColor);
+			javax.swing.UIManager.put("info", bgMid);
+			javax.swing.UIManager.put("nimbusInfoBlue", bgLight);
+			javax.swing.UIManager.put("menuText", textColor);
+			javax.swing.UIManager.put("textForeground", textColor);
+			javax.swing.UIManager.put("controlText", textColor);
+			javax.swing.UIManager.put("infoText", textColor);
+
+			javax.swing.UIManager.put("Table.background", new Color(45, 50, 58));
+			javax.swing.UIManager.put("Table.foreground", textColor);
+			javax.swing.UIManager.put("Table.alternateRowColor", new Color(50, 55, 65));
+			javax.swing.UIManager.put("Table[Enabled+Selected].textForeground", Color.WHITE);
+			javax.swing.UIManager.put("Table[Enabled+Selected].textBackground", accentDim);
+			javax.swing.UIManager.put("TableHeader.background", bgLight);
+			javax.swing.UIManager.put("TableHeader.foreground", textColor);
+
+			javax.swing.UIManager.put("TextField.background", controlBg);
+			javax.swing.UIManager.put("TextField.foreground", textColor);
+			javax.swing.UIManager.put("ComboBox.background", controlBg);
+			javax.swing.UIManager.put("ComboBox.foreground", textColor);
+
+			javax.swing.UIManager.put("ProgressBar.foreground", accent);
+			javax.swing.UIManager.put("nimbusOrange", accent);
+
+			javax.swing.UIManager.put("TabbedPane.background", bgMid);
+			javax.swing.UIManager.put("TabbedPane.foreground", textColor);
+
+			javax.swing.UIManager.put("OptionPane.messageForeground", textColor);
+			javax.swing.UIManager.put("Panel.background", bgMid);
+			javax.swing.UIManager.put("Label.foreground", textColor);
+
+		} catch (Exception ignored) {}
+
 		GuiMain app;
 		try {
 			app = new GuiMain();

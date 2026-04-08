@@ -192,9 +192,9 @@ public class SimulationPanel extends JPanel implements CloudSimEventListener {
 			super(results);
 
 			super.setFont(new Font(super.getFont().getName(), Font.PLAIN, 9) );
-			super.setBackground(Color.YELLOW);
+			super.setBackground(new Color(30, 34, 39, 220));
 			super.setOpaque(true);
-			super.setForeground(Color.BLACK);
+			super.setForeground(new Color(46, 160, 67));
 			super.setBounds(x, y, width, height);
 		}
 

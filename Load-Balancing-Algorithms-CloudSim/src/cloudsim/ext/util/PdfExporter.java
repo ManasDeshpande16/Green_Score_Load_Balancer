@@ -30,7 +30,7 @@ public class PdfExporter {
 	
 	private static final DecimalFormat df = new DecimalFormat("#0.00");
 
-	public static void saveToPdf(File file, 
+	public static void saveToPdf(File file,
 								 String header,
 								 List<Object[]> summary,
 								 List<Object[]> ubStats,
@@ -39,7 +39,9 @@ public class PdfExporter {
 								 Map<String, BufferedImage> dcProcTimeGraphs,
 								 Map<String, BufferedImage> dcLoadingGraphs,
 								 List<Object[]> costSummary,
-								 List<Object[]> costDetails) throws IOException, DocumentException {
+								 List<Object[]> costDetails,
+								 List<Object[]> energySummary,
+								 List<Object[]> energyDetails) throws IOException, DocumentException {
 		Document pdf = new Document();
 		ByteArrayOutputStream bout = new ByteArrayOutputStream();
 	
@@ -61,7 +63,12 @@ public class PdfExporter {
 		
 		addCostSummary(pdf, costSummary);
 		addCostDetails(pdf, costDetails);
-		
+
+		if (energySummary != null && energyDetails != null) {
+			addEnergySummary(pdf, energySummary);
+			addEnergyDetails(pdf, energyDetails);
+		}
+
 		pdf.close();
 
 		FileOutputStream out = new FileOutputStream(file);
@@ -141,6 +148,24 @@ public class PdfExporter {
 		pdf.add(new Paragraph(" "));
 	}
 	
+	private static void addEnergySummary(Document pdf, List<Object[]> summary) throws DocumentException {
+		addHeader(pdf, "Green Energy Metrics", 12);
+		PdfPTable table = new PdfPTable(new float[]{0.5f, 0.5f});
+		populateBorderlessTable(summary, table);
+		pdf.add(table);
+		pdf.add(new Paragraph(" "));
+	}
+
+	private static void addEnergyDetails(Document pdf, List<Object[]> details) throws DocumentException {
+		PdfPTable table = new PdfPTable(new float[]{0.34f, 0.33f, 0.33f});
+		table.addCell(getHeadingCell("Data Center"));
+		table.addCell(getHeadingCell("Energy (kWh)"));
+		table.addCell(getHeadingCell("Carbon (kgCO2)"));
+		populateTable(details, table);
+		pdf.add(table);
+		pdf.add(new Paragraph(" "));
+	}
+
 	private static void addCostDetails(Document pdf, List<Object[]> costs) throws DocumentException{
 		
 		PdfPTable table = new PdfPTable(new float[]{0.25f, 0.25f, 0.25f, 0.25f});

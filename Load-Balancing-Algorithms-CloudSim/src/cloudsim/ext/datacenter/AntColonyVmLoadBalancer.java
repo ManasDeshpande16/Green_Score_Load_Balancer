@@ -42,7 +42,6 @@ public class AntColonyVmLoadBalancer extends VmLoadBalancer {
 		Ant queryAnt = new Ant(pheromones);
 		int vmId = queryAnt.FetchFinalVm();
 		allocatedVm(vmId);
-		System.out.println("allocated "+vmId);
 		return vmId;
 	}
 
@@ -101,7 +100,6 @@ public class AntColonyVmLoadBalancer extends VmLoadBalancer {
 				}
 			}
 			for (int i = 0; i < probability.length; i++) {
-				System.out.println("Debug " + probability[i]);
 			}
 			return -1;
 		}
@@ -133,7 +131,7 @@ public class AntColonyVmLoadBalancer extends VmLoadBalancer {
 			double maxBw = ((VirtualMachine) dcbLocal.vmlist.get(newVmId)).getCharacteristics().getBw();
 			double currentBw = ((VirtualMachine) dcbLocal.vmlist.get(newVmId)).getBw();
 			// double requestedBw = cloudlet.getUtilizationOfBw(0);
-			return Math.pow(pheromones[prevVmId][newVmId], alpha) + 1.0 + (maxBw - currentBw / maxBw);
+			return Math.pow(pheromones[prevVmId][newVmId], alpha) + 1.0 + ((maxBw - currentBw) / maxBw);
 
 		}
 	}

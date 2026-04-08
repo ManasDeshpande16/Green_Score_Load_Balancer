@@ -26,7 +26,6 @@ public class honeyBee extends VmLoadBalancer implements CloudSimEventListener {
 		vmId = getScoutBee();
 		scoutBee = vmId;
 		allocatedVm(vmId);
-		System.out.println("allocated "+vmId);
 		return vmId;
 	}
 	
