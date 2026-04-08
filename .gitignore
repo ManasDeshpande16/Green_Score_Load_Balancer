@@ -1,0 +1,16 @@
+# Build output
+**/build/
+**/dist/
+
+# OS files
+.DS_Store
+
+# IDE
+*.iml
+.idea/
+nbproject/private/
+
+# Simulation output
+sim_report
+sim_trace
+GridSim_stat.txt
